@@ -1,0 +1,283 @@
+﻿@using Entity
+@model Entity.LogModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <style type="text/css">
+        body {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+
+        table {
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+            background-color: #fff;
+        }
+
+            table th {
+                background-color: #B8DBFD;
+                color: #333;
+                font-weight: bold;
+            }
+
+            table th, table td {
+                padding: 5px;
+                border: 1px solid #ccc;
+            }
+
+            table, table table td {
+                border: 0px solid #ccc;
+            }
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/css/datepicker.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.8.1/css/bootstrap-select.css">
+    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.8.1/js/bootstrap-select.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.3.0/js/bootstrap-datepicker.js"></script>
+</head>
+<body>
+
+
+    <div class="container">
+
+        @using (Html.BeginForm("Index", "UserLog", FormMethod.Post, new { id = "myForm" }))
+        {
+            <br />
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="StartDate">Start date:</label>
+                        <input type="text" value="" id="startDate" name="StartDate" class="form-control datepicker" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="EndDate">End date:</label>
+                        <input type="text" value="" id="endDate" name="EndDate" class="form-control datepicker" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="EndDate">Error level:</label>
+                        @Html.DropDownList("errorLevel", EnumHelper.GetSelectList(typeof(Enumeration.ErrorLevel)),
+                            "Select error level",new { multiple = "multiple", @class = "form-control selectpicker", @data_live_search = "true" })
+
+                        <input type="hidden" id="Level" name="Level" value="" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="UserId">UserId:</label>
+                        <input type="text" value="" id="userId" name="UserId" class="form-control" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-warning" id="btnSearch" name="btnSearch" onclick="$('#hfIsSearch').val(true); $('#hfCurrentPageIndex').val(1); GetErrorLogs();">Search</button>
+                    @* onclick="SearchErrorLogs();" *@
+                </div>
+            </div>
+            <br />
+
+            <div class="row">
+                <div class="col-md-12 table-responsive">
+                    <h4>Log</h4>
+                    <hr />
+
+                    <table cellpadding="0" cellspacing="0" class="table">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Host</th>
+                                <th>Error</th>
+                                <th>Operation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loggDataTable">
+                            @foreach (var item in Model.Data)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>@item.Host</td>
+                                    <td>@item.Error</td>
+                                    <td><a href="JavaScript:void(0);" onclick="GetErrorById(@item.Id)">View Error</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <br />
+                    <table cellpadding="0" cellspacing="0" id="paging">
+                        <tr>
+                            @for (int i = 1; i <= Model.PageCount; i++)
+                            {
+                                <td>
+                                    @if (i != Model.CurrentPageIndex)
+                                    {
+                                        <a href="javascript:PagerClick(@i);">@i</a>
+                                    }
+                                    else
+                                    {
+                                        <span>@i</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    </table>
+                    <input type="hidden" id="hfCurrentPageIndex" name="PageNo" value="1" />
+                    <input type="hidden" id="hfIsSearch" name="IsSearch" value="false" />
+
+                    <script type="text/javascript">
+                        function PagerClick(index) {
+                            document.getElementById("hfCurrentPageIndex").value = index;
+                            GetErrorLogs();
+                        }
+                    </script>
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-12">
+                    <b>
+                        <span id="Host"></span>
+                    </b>
+
+                    <br />
+                    <br />
+                    <span id="FullError"></span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <script>
+
+        $(function () {
+            $("#startDate").datepicker({
+                todayBtn: 1,
+                autoclose: true,
+            }).on('changeDate', function (selected) {
+                debugger
+                var minDate = new Date(selected.date.valueOf());
+                $('#endDate').datepicker('setStartDate', minDate);
+                $('#endDate').datepicker('setDate', minDate); // <--THIS IS THE LINE ADDED
+            });
+
+            $("#endDate").datepicker()
+                .on('changeDate', function (selected) {
+                    var maxDate = new Date(selected.date.valueOf());
+                    $('#startDate').datepicker('setEndDate', maxDate);
+                });
+
+        });
+
+        $(document).ready(function () {
+            $('#hfIsSearch').val(false);
+            $('select').selectpicker();
+        });
+
+        function sendData() {
+            if ('Nothing selected' != $('button[data-id=errorLevel]').attr('title')) {
+                $('#Level').val($('button[data-id=errorLevel]').attr('title'));
+            }
+            else {
+                $('#Level').val('');
+            }
+            $('#hfIsSearch').val(true);
+            $("#myForm").submit();
+        }
+
+        function GetErrorById(id) {
+            $.ajax({
+                url: '/UserLog/GetLogDetail',
+                type: 'GET',
+                data: { 'id': id },
+                dataType: 'json',
+                success: function (data) {
+                    debugger
+                    //alert('Data: ' + data);
+                    $('#Host').html(data.Host);
+                    $('#FullError').html(data.Error);
+                },
+                error: function (request, error) {
+                    alert("Request: " + JSON.stringify(request));
+                }
+            });
+        }
+
+        function GetErrorLogs() {
+
+            var levelData = "";
+            if ('Nothing selected' != $('button[data-id=errorLevel]').attr('title')) {
+                levelData = $('button[data-id=errorLevel]').attr('title');
+            }
+
+            var searchParam = JSON.stringify({
+                StartDate: $('#startDate').val(),
+                EndDate: $('#endDate').val(),
+                Level: levelData,
+                UserId: $('#userId').val(),
+                IsSearch: $('#hfIsSearch').val(),
+                PageNo: $('#hfCurrentPageIndex').val()
+            });
+
+            $('#loggDataTable').html('');
+            $.ajax({
+                url: '/UserLog/SearchErrorLogs',
+                type: 'POST',
+                data: searchParam,
+                contentType: "application/json; charset=utf-8",
+                dataType: 'json',
+                success: function (data) {
+                    debugger
+                    $('#paging').html('');
+
+                    var pagingHtml = "<tr>";
+                    for (var i=1; i <= data.PageCount; i++)
+                    {
+                        pagingHtml += "<td>";
+                        if (i != data.CurrentPageIndex)
+                        {
+                            pagingHtml += "<a href='javascript:PagerClick("+i+");'>" + i + "</a>";
+                        }
+                        else
+                        {
+                            pagingHtml += "<span>"+i+"</span>";
+                        }
+                        pagingHtml += "</td>";
+                    }
+                    pagingHtml += "</tr>";
+                    $('#paging').html(pagingHtml);
+
+                    var renderHtml = '';
+                    $.each(data.Data, function (key, value) {
+                        renderHtml += '<tr><td>' + value.Id +'</td>';
+                        renderHtml += '<td>' + value.Host +'</td>';
+                        renderHtml += '<td>' + value.Error +'</td>';
+                        renderHtml += '<td><a href="JavaScript:void(0);" onclick="GetErrorById('+ value.Id +')">View Error</a></td></tr>';
+                    });
+                    if (renderHtml == '') {
+                        renderHtml += '<tr><td colspan=4>No data found...!</td></tr>'
+                    }
+                    $('#loggDataTable').html(renderHtml);
+                },
+                error: function (request, error) {
+                    alert("Request: " + JSON.stringify(request));
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+﻿
+@model Entity.LogModel
+
+@using (Html.BeginForm("GetloggingData", "UserLog", FormMethod.Post, new { id = "myForm" }))
+{
+    
+    <div class="row">
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-warning" id="btnSearch" name="btnSearch" onclick="sendData()">Search</button>
+            @* onclick="SearchErrorLogs();" *@
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-md-12 table-responsive">
+            <h4>Log</h4>
+            <hr />
+
+            <table cellpadding="0" cellspacing="0" class="table">
+                <tr>
+                    <th>Id</th>
+                    <th>Host</th>
+                    <th>Error</th>
+                    <th>Operation</th>
+                </tr>
+                @foreach (var item in Model.Data)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>@item.Host</td>
+                        <td>@item.Error</td>
+                        <td><a href="JavaScript:void(0);" onclick="GetErrorById(@item.Id)">View Error</a></td>
+                    </tr>
+                }
+            </table>
+            <br />
+            <table cellpadding="0" cellspacing="0">
+                <tr>
+                    @for (int i = 1; i <= Model.PageCount; i++)
+                    {
+                        <td>
+                            @if (i != Model.CurrentPageIndex)
+                            {
+                                <a href="javascript:PagerClick(@i);">@i</a>
+                            }
+                            else
+                            {
+                                <span>@i</span>
+                            }
+                        </td>
+                    }
+                </tr>
+            </table>
+            <input type="hidden" id="hfCurrentPageIndex" name="PageNo" value="1" />
+            <input type="hidden" id="hfIsSearch" name="IsSearch" value="false" />
+
+            <script type="text/javascript">
+                function PagerClick(index) {
+
+                    document.getElementById("hfCurrentPageIndex").value = index;
+                    sendData();
+                }
+            </script>
+        </div>
+    </div>
+    <br />
+    <div class="row">
+        <div class="col-md-12">
+            <b>
+                <span id="Host"></span>
+            </b>
+
+            <br />
+            <br />
+            <span id="FullError"></span>
+        </div>
+    </div>
+}
+
